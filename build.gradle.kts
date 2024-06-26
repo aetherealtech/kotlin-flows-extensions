@@ -5,7 +5,7 @@ plugins {
 }
 
 group = "com.aetherealtech"
-version = "0.0.1"
+version = "0.0.3"
 
 repositories {
     mavenCentral()
@@ -54,7 +54,7 @@ publishing {
         withType<MavenPublication> {
             pom {
                 packaging = "jar"
-                name.set("kotlinflowsextensions")
+                name.set("kotlin-flows-extensions")
                 description.set("Kotlin Flows Extensions")
                 url.set("github.com/aetherealtech/kotlin-flows-extensions")
                 licenses {

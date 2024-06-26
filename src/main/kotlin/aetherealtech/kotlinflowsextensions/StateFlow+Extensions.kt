@@ -24,6 +24,44 @@ fun <T, K> StateFlow<T>.mapState(
     }
 }
 
+fun <T> StateFlow<StateFlow<T>>.flattenLatestState(): StateFlow<T> {
+    return object: StateFlow<T> {
+        override val replayCache: List<T>
+            get() {
+                return this@flattenLatestState.replayCache
+                    .flatMap(StateFlow<T>::replayCache)
+            }
+
+        override val value: T
+            get() {
+                return this@flattenLatestState.value.value
+            }
+
+        override suspend fun collect(collector: FlowCollector<T>): Nothing {
+            coroutineScope {
+                var previousFlow: Job? = null
+
+                this@flattenLatestState.collect { value ->
+                    previousFlow?.apply {
+                        cancel(CancellationException())
+                        join()
+                    }
+
+                    // Do not pay for dispatch here, it's never necessary
+                    previousFlow = launch(start = CoroutineStart.UNDISPATCHED) {
+                        collector.emitAll(value)
+                    }
+                }
+            }
+        }
+    }
+}
+
+fun <T, K> StateFlow<T>.flatMapLatestState(
+    transform: (value: T) -> StateFlow<K>
+) = mapState(transform)
+    .flattenLatestState()
+
 fun <T> Flow<T>.cacheLatest(
     initialValue: T
 ): StateFlow<T> {
